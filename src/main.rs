@@ -30,7 +30,7 @@ type Buffer = Vec<u8>;
 
 #[derive(Clone, Debug, Parser)]
 #[command(name = "stow", about = "program for compressing|encrypting every file in a path")]
-#[command(version = "0.1.0")]
+#[command(version = env!("GIT_DESCRIBE"))]
 #[command(author = "Scott A. Idler <scott.a.idler@gmail.com>")]
 #[command(arg_required_else_help = true)]
 #[command(after_help = "first letter alias exists for [p]ack and [l]oad")]
