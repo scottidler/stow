@@ -29,7 +29,10 @@ const STOW: &str = "stow";
 type Buffer = Vec<u8>;
 
 #[derive(Clone, Debug, Parser)]
-#[command(name = "stow", about = "program for compressing|encrypting every file in a path")]
+#[command(
+    name = "stow",
+    about = "program for compressing|encrypting every file in a path"
+)]
 #[command(version = env!("BUILD_VERSION"))]
 #[command(author = "Scott A. Idler <scott.a.idler@gmail.com>")]
 #[command(arg_required_else_help = true)]
@@ -44,10 +47,18 @@ struct Cli {
 
 #[derive(Clone, Debug, Parser)]
 enum Command {
-    #[clap(name = "pack", alias = "p", about = "compress|encrypt every file in a path")]
+    #[clap(
+        name = "pack",
+        alias = "p",
+        about = "compress|encrypt every file in a path"
+    )]
     Pack(CommandCli),
 
-    #[clap(name = "load", alias = "l", about = "decrypt|decompress every file in a path")]
+    #[clap(
+        name = "load",
+        alias = "l",
+        about = "decrypt|decompress every file in a path"
+    )]
     Load(CommandCli),
 }
 
@@ -146,8 +157,12 @@ fn tar_xz(paths: &[&Path]) -> Result<Buffer> {
         header.set_cksum();
         tar_builder.append(&header, File::open(path)?)?;
     }
-    let xz_encoder = tar_builder.into_inner().wrap_err("Failed to finalize tar archive")?;
-    xz_encoder.finish().wrap_err("Failed to finalize compression")?;
+    let xz_encoder = tar_builder
+        .into_inner()
+        .wrap_err("Failed to finalize tar archive")?;
+    xz_encoder
+        .finish()
+        .wrap_err("Failed to finalize compression")?;
     Ok(compressed_data)
 }
 
@@ -188,7 +203,10 @@ fn get_chunks_and_dirs(
     );
     let bundle_count = if keep_name { 1 } else { bundle_count };
     let (files, dirs): (Vec<_>, Vec<_>) = entries.iter().partition(|path| path.is_file());
-    let chunks = files.chunks(bundle_count).map(|chunk| chunk.to_vec()).collect();
+    let chunks = files
+        .chunks(bundle_count)
+        .map(|chunk| chunk.to_vec())
+        .collect();
     (chunks, dirs)
 }
 
@@ -257,9 +275,19 @@ fn decrypt(path: &Path, password: &SecUtf8) -> Result<Buffer> {
     let secret_key = SecretKey::from_slice(hashed_password.as_ref())?;
     let nonce = Nonce::from([0u8; 12]);
     let mut decrypted_content = vec![0u8; file_content.len() - 16];
-    match chacha20poly1305::open(&secret_key, &nonce, &file_content, None, &mut decrypted_content) {
+    match chacha20poly1305::open(
+        &secret_key,
+        &nonce,
+        &file_content,
+        None,
+        &mut decrypted_content,
+    ) {
         Ok(_) => (),
-        Err(_) => return Err(eyre!("Decryption failed. The provided password may be incorrect.")),
+        Err(_) => {
+            return Err(eyre!(
+                "Decryption failed. The provided password may be incorrect."
+            ))
+        }
     };
     Ok(decrypted_content)
 }
@@ -289,7 +317,10 @@ fn load(path: &Path, password: &SecUtf8) -> Result<()> {
     if path.is_dir() {
         info!("load: path is dir");
         let entries: Result<Vec<_>, _> = fs::read_dir(path)?.collect();
-        let results: Result<Vec<_>, _> = entries?.par_iter().map(|entry| load(&entry.path(), password)).collect();
+        let results: Result<Vec<_>, _> = entries?
+            .par_iter()
+            .map(|entry| load(&entry.path(), password))
+            .collect();
         results?;
     } else if path.is_file() && path.extension().and_then(std::ffi::OsStr::to_str) == Some(STOW) {
         info!("load: path is file and the extension is stow");
@@ -317,7 +348,9 @@ fn setup_logging() -> Result<()> {
         .join("stow.log");
 
     let logfile = FileAppender::builder()
-        .encoder(Box::new(PatternEncoder::new("{d(%Y-%m-%d %H:%M:%S%.3f)} [{l}] {m}{n}")))
+        .encoder(Box::new(PatternEncoder::new(
+            "{d(%Y-%m-%d %H:%M:%S%.3f)} [{l}] {m}{n}",
+        )))
         .build(log_file_path)?;
 
     let config = Config::builder()
@@ -333,9 +366,18 @@ fn main() -> Result<()> {
 
     match cli.command {
         Some(Command::Pack(pack_cli)) => {
-            let bundle_count = if pack_cli.keep_name { 1 } else { pack_cli.bundle_count };
+            let bundle_count = if pack_cli.keep_name {
+                1
+            } else {
+                pack_cli.bundle_count
+            };
             for pattern in pack_cli.patterns {
-                pack(Path::new(&pattern), &get_password()?, pack_cli.keep_name, bundle_count)?;
+                pack(
+                    Path::new(&pattern),
+                    &get_password()?,
+                    pack_cli.keep_name,
+                    bundle_count,
+                )?;
             }
         }
         Some(Command::Load(load_cli)) => {
