@@ -21,3 +21,6 @@ log = "0.4.19"
 time = "0.3.22"
 sysinfo = "0.29.3"
 log4rs = "1.2.0"
+
+[build-dependencies]
+build-version = { git = "https://github.com/tatari-tv/build-version-rs", tag = "v0.1.0", version = "0.1.0" }
